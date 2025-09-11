@@ -1,10 +1,11 @@
-const express = require("express");
-const cors = require("cors");
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const tf = require("@tensorflow/tfjs-node");
-const cv = require("opencv4nodejs");
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import tf from "@tensorflow/tfjs-node";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
 
 const app = express();
 app.use(cors());
@@ -23,8 +24,7 @@ const upload = multer({ storage });
 let IMAGE_MODEL;
 (async () => {
   try {
-    // IMPORTANT: convert your .h5 to TF.js format first
-    const modelPath = path.join(__dirname, "model", "model.json");
+    const modelPath = path.join(process.cwd(), "model", "converted_model", "model.json");
     IMAGE_MODEL = await tf.loadLayersModel("file://" + modelPath);
     console.log("Image/Video model loaded successfully");
 
@@ -37,13 +37,11 @@ let IMAGE_MODEL;
 })();
 
 // Preprocess single frame or image
-function preprocessFrame(mat) {
-  const resized = mat.resize(new cv.Size(96, 96));
-  const rgb = resized.cvtColor(cv.COLOR_BGR2RGB);
-  const buffer = Buffer.from(rgb.getData());
-  const tensor = tf.node.decodeImage(buffer, 3)
-    .div(tf.scalar(255.0))
-    .expandDims(0);
+async function preprocessImage(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  let tensor = tf.node.decodeImage(buffer, 3);
+  tensor = tf.image.resizeBilinear(tensor, [96, 96]);
+  tensor = tensor.div(255.0).expandDims(0);
   return tensor;
 }
 
@@ -53,8 +51,9 @@ app.post("/api/analyze/image", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     if (!IMAGE_MODEL) return res.status(500).json({ error: "Model not loaded" });
 
-    const imgMat = cv.imread(path.join(UPLOAD_FOLDER, req.file.filename));
-    const inputTensor = preprocessFrame(imgMat);
+    const inputTensor = await preprocessImage(
+      path.join(UPLOAD_FOLDER, req.file.filename)
+    );
     const prediction = IMAGE_MODEL.predict(inputTensor);
     const confidence = prediction.dataSync()[0];
 
@@ -80,36 +79,23 @@ app.post("/api/analyze/video", upload.single("file"), async (req, res) => {
     if (!IMAGE_MODEL) return res.status(500).json({ error: "Model not loaded" });
 
     const videoPath = path.join(UPLOAD_FOLDER, req.file.filename);
-    const cap = new cv.VideoCapture(videoPath);
+    const framesDir = path.join(UPLOAD_FOLDER, "frames");
 
-    let frameCount = 0;
-    let processed = 0;
-    let scores = [];
-    const sampleRate = 5; // process every 5th frame
+    if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
 
-    while (true) {
-      let frame = cap.read();
-      if (frame.empty) break;
+    // Extract frames every 5th frame
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .setFfmpegPath(ffmpegPath)
+        .output(path.join(framesDir, "frame-%03d.jpg"))
+        .outputOptions(["-vf fps=1/5"]) // 1 frame every 5 seconds
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
 
-      if (frameCount % sampleRate === 0) {
-        const inputTensor = preprocessFrame(frame);
-        const prediction = IMAGE_MODEL.predict(inputTensor);
-        const confidence = prediction.dataSync()[0];
-
-        scores.push(confidence);
-        processed++;
-
-        inputTensor.dispose();
-        prediction.dispose();
-      }
-
-      frameCount++;
-    }
-
-    cap.release();
-    fs.unlinkSync(videoPath);
-
-    if (processed === 0) {
+    const frameFiles = fs.readdirSync(framesDir);
+    if (frameFiles.length === 0) {
       return res.json({
         is_deepfake: -1,
         confidence: 0,
@@ -117,11 +103,26 @@ app.post("/api/analyze/video", upload.single("file"), async (req, res) => {
       });
     }
 
-    const avgConfidence = scores.reduce((a, b) => a + b, 0) / processed;
+    let scores = [];
+    for (const file of frameFiles) {
+      const tensor = await preprocessImage(path.join(framesDir, file));
+      const prediction = IMAGE_MODEL.predict(tensor);
+      const confidence = prediction.dataSync()[0];
+
+      scores.push(confidence);
+
+      tensor.dispose();
+      prediction.dispose();
+      fs.unlinkSync(path.join(framesDir, file));
+    }
+
+    fs.unlinkSync(videoPath);
+
+    const avgConfidence = scores.reduce((a, b) => a + b, 0) / scores.length;
     res.json({
       is_deepfake: avgConfidence > 0.5 ? 1 : 0,
       confidence: avgConfidence,
-      message: `Analyzed ${processed} frames out of ${frameCount}`,
+      message: `Analyzed ${scores.length} frames`,
     });
   } catch (err) {
     console.error(err);
