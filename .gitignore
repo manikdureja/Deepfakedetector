@@ -65,3 +65,11 @@ node_modules/
 .vscode/
 .idea/
 
+# macOS metadata
+.DS_Store
+
+# Environment variables
+.env
+
+# Distribution / build folders
+dist/
