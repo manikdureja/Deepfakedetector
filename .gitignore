@@ -30,3 +30,38 @@ node_modules/
 # IDE/editor files
 .vscode/
 .idea/
+# Virtual environments
+venv/
+*/venv/
+backend/venv/
+backend/model/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large ML model files
+*.h5
+*.pth
+*.ckpt
+*.joblib
+
+# Videos
+*.mp4
+*.avi
+*.mov
+
+# Images (datasets, heavy assets)
+*.png
+*.jpg
+*.jpeg
+
+# Node modules (React/Node)
+node_modules/
+
+# IDE/editor files
+.vscode/
+.idea/
+
