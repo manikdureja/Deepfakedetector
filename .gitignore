@@ -1,75 +1,24 @@
-# Virtual environments
+# NodeJS dependencies
+node_modules/
+
+# Python Virtual Environment
 venv/
 */venv/
-backend/venv/
-backend/model/venv/
 
 # Python cache
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
-# Large ML model files
-*.h5
-*.pth
-*.ckpt
-*.joblib
-
-# Videos and images (datasets, samples)
-*.mp4
-*.avi
-*.mov
-*.png
-*.jpg
-*.jpeg
-
-# Node modules (if using React/Node)
-node_modules/
-
-# IDE/editor files
-.vscode/
-.idea/
-# Virtual environments
-venv/
-*/venv/
-backend/venv/
-backend/model/venv/
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Large ML model files
-*.h5
-*.pth
-*.ckpt
-*.joblib
-
-# Videos
-*.mp4
-*.avi
-*.mov
-
-# Images (datasets, heavy assets)
-*.png
-*.jpg
-*.jpeg
-
-# Node modules (React/Node)
-node_modules/
-
-# IDE/editor files
-.vscode/
-.idea/
-
-# macOS metadata
-.DS_Store
-
-# Environment variables
+# Build folders & logs
+dist/
+build/
+npm-debug.log*
+# Environment variables (contains secrets!)
 .env
 
-# Distribution / build folders
-dist/
+# macOS system files
+.DS_Store
+
+# User uploaded or processed content
+backend/uploads/
+backend/processed/
