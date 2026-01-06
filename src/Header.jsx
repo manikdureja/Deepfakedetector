@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate, Link } from 'react-router-dom'; // 1. Added Link here
 import logo from './assets/logo.png';
 import Search_icon from './assets/search_icon.png';
 import { signout } from './Auth';
@@ -7,13 +7,12 @@ import { signout } from './Auth';
 const Header = ({ onSearch }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
-  const navigate = useNavigate(); // Initialize useNavigate
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const navigate = useNavigate(); 
 
-  // Simulate checking login status (replace with actual logic)
   useEffect(() => {
-    const token = localStorage.getItem('authToken'); // Check if a token exists
-    setIsLoggedIn(!!token); // Set login status based on token presence
+    const token = localStorage.getItem('authToken'); 
+    setIsLoggedIn(!!token); 
   }, []);
 
   const handleSearch = (e) => {
@@ -37,12 +36,12 @@ const Header = ({ onSearch }) => {
   const handleLogout = () => {
     try {
       signout();
-      localStorage.removeItem('authToken'); // Remove token from localStorage
-      setIsLoggedIn(false); // Update login status
-      navigate('/'); // Redirect to the home or login page
-      window.location.reload(); // Refresh the page to reflect the updated state
+      localStorage.removeItem('authToken'); 
+      setIsLoggedIn(false); 
+      navigate('/'); 
+      window.location.reload(); 
     } catch (error) {
-      alert('Error', 'Failed to sign out'); // Use alert instead of Alert.alert for web
+      alert('Error', 'Failed to sign out'); 
     }
   };
 
@@ -50,10 +49,13 @@ const Header = ({ onSearch }) => {
     <header className="sleek-video-header">
       <div className="header-content">
         <div className="left-section">
-          <div className="logo-container">
-            <img className="logo" src={logo} alt="LOGO" />
-            <h1 className="heading">Deepfake Detector</h1>
-          </div>
+          <Link to="/" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+            <div className="logo-container">
+              <img className="logo" src={logo} alt="LOGO" />
+              <h1 className="heading">Deepfake Detector</h1>
+            </div>
+          </Link>
+
         </div>
         <div className="auth-buttons">
           {!isLoggedIn ? (
