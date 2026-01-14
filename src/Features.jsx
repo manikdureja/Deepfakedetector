@@ -76,11 +76,12 @@ const Features = ({ searchQuery }) => {
   
       const formData = new FormData();
       formData.append('file', file);
-  
+      
+      const backendURL = import.meta.env.VITE_BACKEND_URL;
       // Determine the API endpoint based on the selected feature
       const apiUrl = selectedFeature.id === 'image'
-        ? 'http://localhost:5000/api/analyze/image'
-        : 'http://localhost:5000/api/analyze/video';
+        ? `${backendURL}/api/analyze/image`
+        : `${backendURL}/api/analyze/video`;
   
       // Use XMLHttpRequest to track upload progress
       const xhr = new XMLHttpRequest();
